@@ -101,7 +101,7 @@ Copy code
 
 ### Step 1 — Clone or download the project
 git clone <your-github-repo-url>
-cd methane_monitoring_ai
+cd adams
 
 ### Step 2 — Create and activate a virtual environment
 powershell
@@ -316,4 +316,5 @@ Copy code
 insert_sensor_event(timestamp=data["timestamp"], node_id=data["node_id"], methane_ppm=data["methane_ppm"], scenario=data.get("scenario", "normal"))
 Crew doesn’t run automatically
 Check that background_tasks.add_task(run_crew_async) is present in api_server.py.
+
 
