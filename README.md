@@ -52,10 +52,8 @@ Install or ensure you have:
 
 ---
 
-<details> <summary>Paste this exact block into README.md</summary>
+<details> 
 ### 3 — Project layout
-
-
 
 methane_monitoring_ai/
 ├── autonomous/ # CREWAI / Cognitive Layer
@@ -317,6 +315,7 @@ Copy code
 insert_sensor_event(timestamp=data["timestamp"], node_id=data["node_id"], methane_ppm=data["methane_ppm"], scenario=data.get("scenario", "normal"))
 Crew doesn’t run automatically
 Check that background_tasks.add_task(run_crew_async) is present in api_server.py.
+
 
 
 
