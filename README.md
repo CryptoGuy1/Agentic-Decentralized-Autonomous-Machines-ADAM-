@@ -58,12 +58,12 @@ Install or ensure you have:
   - `autonomous/` — CREWAI / cognitive layer
     - `crew.py` — CrewAI orchestration (agents & tasks)
     - `reasoning_agent.py` — LLM reasoning and anomaly decision logic
-    - `weaviate_client.py` — Weaviate connection and CRUD helpers
     - `email_alert.py` — Gmail alert helper
     - `api_server.py` — FastAPI ingestion server (receives Node-RED or HTTP posts)
   - `data_layer/` — Vector DB schema and Weaviate utilities
     - `create_schema.py` — Create Weaviate `SensorEvent` class
     - `test_weaviate_connection.py` — Connection sanity checks
+    - `weaviate_client.py` — Weaviate connection and CRUD helpers
     - `weaviate_utils.py` — Insert / query helper wrappers
   - `simulation/` — Simulators and Node-RED flow
     - `simulate_mq4.py` — Python methane sensor simulator
@@ -308,6 +308,7 @@ Copy code
 insert_sensor_event(timestamp=data["timestamp"], node_id=data["node_id"], methane_ppm=data["methane_ppm"], scenario=data.get("scenario", "normal"))
 Crew doesn’t run automatically
 Check that background_tasks.add_task(run_crew_async) is present in api_server.py.
+
 
 
 
