@@ -1,4 +1,4 @@
-# Veri-ADAM — Methane Monitoring AI (CrewAI + Weaviate + Node-RED)
+# ADAM — Methane Monitoring AI (CrewAI + Weaviate + Node-RED)
 
 **Purpose**  
 This repository contains Veri-ADAM components to ingest methane sensor readings, store them in Weaviate, and run an autonomous CrewAI pipeline that validates, analyzes, and reports anomalies (with optional email alerts).  
@@ -316,5 +316,6 @@ Copy code
 insert_sensor_event(timestamp=data["timestamp"], node_id=data["node_id"], methane_ppm=data["methane_ppm"], scenario=data.get("scenario", "normal"))
 Crew doesn’t run automatically
 Check that background_tasks.add_task(run_crew_async) is present in api_server.py.
+
 
 
