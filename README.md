@@ -1,4 +1,4 @@
-# ADAM — Methane Monitoring AI (CrewAI + Weaviate + Node-RED)
+# ADAM — (CrewAI + Weaviate + Node-RED)
 
 **Purpose**  
 This repository contains Veri-ADAM components to ingest methane sensor readings, store them in Weaviate, and run an autonomous CrewAI pipeline that validates, analyzes, and reports anomalies (with optional email alerts).  
@@ -52,43 +52,36 @@ Install or ensure you have:
 
 ---
 
-<details> 
 ### 3 — Project layout
 
-methane_monitoring_ai/
-├── autonomous/ # CREWAI / Cognitive Layer
-│ ├── crew.py # CrewAI orchestration (agents & tasks)
-│ ├── reasoning_agent.py # Reasoning logic for anomalies
-│ ├── weaviate_client.py # CRUD operations for Weaviate
-│ ├── email_alert.py # Sends email alerts (optional)
-│ └── api_server.py # FastAPI ingestion server
-│
-├── data_layer/ # Vector DB schema and data handling
-│ ├── create_schema.py # Defines SensorEvent schema in Weaviate
-│ ├── test_weaviate_connection.py
-│ └── weaviate_utils.py
-│
-├── simulation/ # Environment Simulation / Node-RED flows
-│ ├── simulate_mq4.py
-│ ├── node_publisher.py
-│ └── node_red_flow.json # Ready-to-import Node-RED flow
-│
-├── config/ # Agent & task YAML configs and settings
-│ ├── agents.yaml
-│ ├── tasks.yaml
-│ └── settings.yaml
-│
-├── run/ # Scripts to run/test the system
-│ ├── auto_cycle.py # Automatic loop for crew triggering
-│ ├── main.py
-│ └── test_anomaly_cycle.py
-│
-├── docker-compose.yml # Weaviate DB container setup
-├── requirements.txt # Python dependencies
-├── README.md
-└── .env # Environment variables (not committed)
+- `methane_monitoring_ai/`
+  - `autonomous/` — CREWAI / cognitive layer
+    - `crew.py` — CrewAI orchestration (agents & tasks)
+    - `reasoning_agent.py` — LLM reasoning and anomaly decision logic
+    - `weaviate_client.py` — Weaviate connection and CRUD helpers
+    - `email_alert.py` — Gmail alert helper
+    - `api_server.py` — FastAPI ingestion server (receives Node-RED or HTTP posts)
+  - `data_layer/` — Vector DB schema and Weaviate utilities
+    - `create_schema.py` — Create Weaviate `SensorEvent` class
+    - `test_weaviate_connection.py` — Connection sanity checks
+    - `weaviate_utils.py` — Insert / query helper wrappers
+  - `simulation/` — Simulators and Node-RED flow
+    - `simulate_mq4.py` — Python methane sensor simulator
+    - `node_publisher.py` — Publishes simulated data to Node-RED or API
+    - `node_red_flow.json` — Node-RED flow import file
+  - `config/` — YAML configuration
+    - `agents.yaml`
+    - `tasks.yaml`
+    - `settings.yaml`
+  - `run/` — Run & test utilities
+    - `auto_cycle.py` — loop/watcher to trigger Crew periodically
+    - `main.py`
+    - `test_anomaly_cycle.py`
+- `docker-compose.yml` — Weaviate and optional vectorizer containers
+- `requirements.txt` — Python packages to install in `.venv`
+- `README.md` — Project documentation
+- `.env` — Local secrets (GMAIL creds, WEAVIATE_URL) — **do not commit**
 
-</details>
 ---
 
 ## 4 — Step-by-step installation (Windows PowerShell)
@@ -315,6 +308,7 @@ Copy code
 insert_sensor_event(timestamp=data["timestamp"], node_id=data["node_id"], methane_ppm=data["methane_ppm"], scenario=data.get("scenario", "normal"))
 Crew doesn’t run automatically
 Check that background_tasks.add_task(run_crew_async) is present in api_server.py.
+
 
 
 
