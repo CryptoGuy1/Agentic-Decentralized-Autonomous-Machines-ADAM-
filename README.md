@@ -52,44 +52,45 @@ Install or ensure you have:
 
 ---
 
-## 3 — Project layout
+<details> <summary>Paste this exact block into README.md</summary>
+### 3 — Project layout
+
+
 
 methane_monitoring_ai/
-├── autonomous/
+├── autonomous/ # CREWAI / Cognitive Layer
 │ ├── crew.py # CrewAI orchestration (agents & tasks)
 │ ├── reasoning_agent.py # Reasoning logic for anomalies
 │ ├── weaviate_client.py # CRUD operations for Weaviate
 │ ├── email_alert.py # Sends email alerts (optional)
 │ └── api_server.py # FastAPI ingestion server
 │
-├── data_layer/
+├── data_layer/ # Vector DB schema and data handling
 │ ├── create_schema.py # Defines SensorEvent schema in Weaviate
 │ ├── test_weaviate_connection.py
 │ └── weaviate_utils.py
 │
-├── simulation/
+├── simulation/ # Environment Simulation / Node-RED flows
 │ ├── simulate_mq4.py
 │ ├── node_publisher.py
 │ └── node_red_flow.json # Ready-to-import Node-RED flow
 │
-├── config/
+├── config/ # Agent & task YAML configs and settings
 │ ├── agents.yaml
 │ ├── tasks.yaml
 │ └── settings.yaml
 │
-├── run/
+├── run/ # Scripts to run/test the system
 │ ├── auto_cycle.py # Automatic loop for crew triggering
 │ ├── main.py
 │ └── test_anomaly_cycle.py
 │
-├── docker-compose.yml
-├── requirements.txt
+├── docker-compose.yml # Weaviate DB container setup
+├── requirements.txt # Python dependencies
 ├── README.md
-└── .env
+└── .env # Environment variables (not committed)
 
-yaml
-Copy code
-
+</details>
 ---
 
 ## 4 — Step-by-step installation (Windows PowerShell)
@@ -316,6 +317,7 @@ Copy code
 insert_sensor_event(timestamp=data["timestamp"], node_id=data["node_id"], methane_ppm=data["methane_ppm"], scenario=data.get("scenario", "normal"))
 Crew doesn’t run automatically
 Check that background_tasks.add_task(run_crew_async) is present in api_server.py.
+
 
 
 
