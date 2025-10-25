@@ -1,0 +1,19 @@
+collect_data_task:
+  description: "Read input methane levels from sensors and insert them into Weaviate."
+  agent: sensor_agent
+  expected_output: "Sensor data inserted successfully into Weaviate."
+
+validate_data_task:
+  description: "Validate and clean methane readings for missing values or anomalies."
+  agent: validator_agent
+  expected_output: "Validated methane readings with anomalies flagged."
+
+analyze_task:
+  description: "Analyze validated methane readings and detect exceedance of safety thresholds."
+  agent: decision_agent
+  expected_output: "Anomaly detection results and threshold exceedance analysis."
+
+report_task:
+  description: "Generate alert report or summary and trigger email notifications if anomalies are detected."
+  agent: coordinator_agent
+  expected_output: "Generated methane alert report and notifications sent if required."
