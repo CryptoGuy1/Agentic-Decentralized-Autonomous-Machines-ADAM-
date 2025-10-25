@@ -43,8 +43,8 @@ You can simulate data manually or through **Node-RED**.
 ## 2 — What you need
 
 Install or ensure you have:
-- **Windows 10 or 11**  
-- **Python 3.12.x** (your current version works fine)  
+- **Windows 10 or 11 or MacBook**  
+- **Python 3.12.x** 
 - **Docker Desktop** (for Weaviate database)  
 - **VS Code** (recommended editor)  
 - **Node-RED** (for sensor data simulation)  
@@ -316,6 +316,7 @@ Copy code
 insert_sensor_event(timestamp=data["timestamp"], node_id=data["node_id"], methane_ppm=data["methane_ppm"], scenario=data.get("scenario", "normal"))
 Crew doesn’t run automatically
 Check that background_tasks.add_task(run_crew_async) is present in api_server.py.
+
 
 
 
