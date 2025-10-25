@@ -97,18 +97,20 @@ Copy code
 > 🔹 Open PowerShell normally for setup commands  
 > 🔹 Use Administrator PowerShell only for Docker install or virtualization setup
 
+## Quick start — step-by-step (copy & paste)
+
 ### Step 1 — Clone or download the project
-```powershell
 git clone <your-github-repo-url>
 cd methane_monitoring_ai
-Step 2 — Create and activate a virtual environment
+
+### Step 2 — Create and activate a virtual environment
 powershell
 Copy code
 python -m venv .venv
 & ".\.venv\Scripts\Activate.ps1"
 You’ll see (.venv) at the start of your prompt.
 
-Step 3 — Install dependencies
+### Step 3 — Install dependencies
 powershell
 Copy code
 python -m pip install --upgrade pip setuptools wheel
@@ -118,10 +120,10 @@ pip install -r requirements.txt
 yaml
 Copy code
 ERROR: No matching distribution found for smtplib
-Remove smtplib from requirements.txt (it’s built into Python).
+Remove smtplib from requirements.txt — smtplib is part of Python’s standard library.
 
 5 — Configure .env file
-Create a .env file at your project root with the following:
+Create a .env file at your project root with the following contents:
 
 ini
 Copy code
@@ -129,24 +131,21 @@ WEAVIATE_URL=http://localhost:8080
 METHANE_THRESHOLD_PPM=80
 GMAIL_USER=your_email@gmail.com
 GMAIL_APP_PASSWORD=your_app_password_here
-Use a Gmail App Password, not your regular password.
-Generate one under: Google Account → Security → App Passwords.
+Use a Gmail App Password, not your regular password. Generate one under: Google Account → Security → App Passwords.
 
 6 — Run Weaviate (Docker)
-Weaviate is your vector database for storing methane readings.
-
 Step 1 — Start Docker Desktop
 Ensure virtualization (Intel VT-x or AMD-V) is enabled in your BIOS.
 
 Step 2 — Launch Weaviate
+
 powershell
 Copy code
 docker compose up -d
 docker compose logs -f
-Wait until you see:
-✅ Weaviate is ready to receive requests
+Wait until you see: ✅ Weaviate is ready to receive requests
 
-Check it manually:
+Check manually:
 
 powershell
 Copy code
@@ -159,7 +158,7 @@ Run this command once:
 powershell
 Copy code
 python -m data_layer.create_schema
-If you see:
+Expected output:
 
 Copy code
 ✅ Weaviate v4 collection created successfully.
@@ -168,8 +167,6 @@ or
 arduino
 Copy code
 Collection already exists.
-—you’re good.
-
 8 — Start the FastAPI ingestion server
 This API receives methane readings and triggers the crew automatically.
 
@@ -182,8 +179,7 @@ If successful, you’ll see:
 makefile
 Copy code
 INFO:     Application startup complete.
-API runs on:
-➡️ http://127.0.0.1:8000
+API runs on: http://127.0.0.1:8000
 
 9 — Test ingestion manually
 Send test data from PowerShell:
@@ -221,30 +217,20 @@ Manual run
 powershell
 Copy code
 python -m autonomous.crew
-This runs:
-
-Collect sensor data
-
-Validate readings
-
-Detect anomalies
-
-Generate report
+This runs: collect → validate → detect → report.
 
 Automatic run (recommended)
 The crew is already triggered automatically in api_server.py whenever new data arrives via /sensor-data.
 
-Alternatively, you can run a loop watcher:
+Alternatively, run a loop watcher:
 
 powershell
 Copy code
 python run/auto_cycle.py
-This watches Weaviate for new data and triggers CrewAI periodically.
+This watches Weaviate for new data and triggers the CrewAI periodically.
 
 12 — Node-RED simulation
-If you want to simulate live sensors:
-
-Open Node-RED in your browser (http://127.0.0.1:1880).
+Open Node-RED in your browser: http://127.0.0.1:1880.
 
 Import → simulation/node_red_flow.json.
 
@@ -290,48 +276,44 @@ Run continuous watcher:
 powershell
 Copy code
 python run/auto_cycle.py
-14 — Troubleshooting
-🧩 Docker issues
+14 — Troubleshooting (common fixes)
+Docker issues
 Ensure Docker Desktop is running.
 
 Enable virtualization in BIOS (VT-x/AMD-V).
 
 Restart your PC if containers fail to start.
 
-🧩 Circular import (weaviate)
+Circular import (weaviate)
 If you get:
 
 pgsql
 Copy code
 ImportError: cannot import name '__version__'
-→ Uninstall the global weaviate and reinstall inside your venv:
+Fix by reinstalling inside the venv:
 
 powershell
 Copy code
 pip uninstall weaviate-client -y
 pip install weaviate-client
-🧩 CrewAI YAML errors
+CrewAI YAML errors
+If you see:
+
 pgsql
 Copy code
 AttributeError: 'str' object has no attribute 'get'
-→ Your YAML files (agents.yaml, tasks.yaml) have formatting issues.
-Each key should have nested fields (description, agent, etc.), not plain strings.
+→ Your YAML files (agents.yaml, tasks.yaml) likely have formatting issues. Ensure each agent/task is specified as a mapping with fields (description, agent, expected_output), not as a bare string.
 
-🧩 Missing fastapi
+Missing fastapi
 powershell
 Copy code
 pip install fastapi uvicorn
-🧩 insert_sensor_event() argument error
-Make sure you call:
+insert_sensor_event() argument error
+Call it like:
 
 python
 Copy code
 insert_sensor_event(timestamp=data["timestamp"], node_id=data["node_id"], methane_ppm=data["methane_ppm"], scenario=data.get("scenario", "normal"))
-🧩 Crew doesn’t run automatically
-Check if background_tasks.add_task(run_crew_async) exists in your api_server.py.
+Crew doesn’t run automatically
+Check that background_tasks.add_task(run_crew_async) is present in api_server.py.
 
-15 — Next steps & notes
-✅ Add proper logging and alerts.
-✅ Deploy Weaviate in the cloud for long-term use.
-✅ Containerize the entire stack with Docker Compose (Weaviate + FastAPI).
-✅ Optional: Integrate blockchain or decentralized logging later for sensor authenticity.
