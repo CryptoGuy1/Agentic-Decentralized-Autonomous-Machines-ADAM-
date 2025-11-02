@@ -1,4 +1,4 @@
-# Veri-ADAM — Methane Monitoring AI (CrewAI + Weaviate + Node-RED)
+# ADAM — (CrewAI + Weaviate + Node-RED)
 
 **Purpose**  
 This repository contains Veri-ADAM components to ingest methane sensor readings, store them in Weaviate, and run an autonomous CrewAI pipeline that validates, analyzes, and reports anomalies (with optional email alerts).  
@@ -43,8 +43,8 @@ You can simulate data manually or through **Node-RED**.
 ## 2 — What you need
 
 Install or ensure you have:
-- **Windows 10 or 11**  
-- **Python 3.12.x** (your current version works fine)  
+- **Windows 10 or 11 or MacBook**  
+- **Python 3.12.x** 
 - **Docker Desktop** (for Weaviate database)  
 - **VS Code** (recommended editor)  
 - **Node-RED** (for sensor data simulation)  
@@ -52,43 +52,35 @@ Install or ensure you have:
 
 ---
 
-## 3 — Project layout
+### 3 — Project layout
 
-methane_monitoring_ai/
-├── autonomous/
-│ ├── crew.py # CrewAI orchestration (agents & tasks)
-│ ├── reasoning_agent.py # Reasoning logic for anomalies
-│ ├── weaviate_client.py # CRUD operations for Weaviate
-│ ├── email_alert.py # Sends email alerts (optional)
-│ └── api_server.py # FastAPI ingestion server
-│
-├── data_layer/
-│ ├── create_schema.py # Defines SensorEvent schema in Weaviate
-│ ├── test_weaviate_connection.py
-│ └── weaviate_utils.py
-│
-├── simulation/
-│ ├── simulate_mq4.py
-│ ├── node_publisher.py
-│ └── node_red_flow.json # Ready-to-import Node-RED flow
-│
-├── config/
-│ ├── agents.yaml
-│ ├── tasks.yaml
-│ └── settings.yaml
-│
-├── run/
-│ ├── auto_cycle.py # Automatic loop for crew triggering
-│ ├── main.py
-│ └── test_anomaly_cycle.py
-│
-├── docker-compose.yml
-├── requirements.txt
-├── README.md
-└── .env
-
-yaml
-Copy code
+- `methane_monitoring_ai/`
+  - `autonomous/` — CREWAI / cognitive layer
+    - `crew.py` — CrewAI orchestration (agents & tasks)
+    - `reasoning_agent.py` — LLM reasoning and anomaly decision logic
+    - `email_alert.py` — Gmail alert helper
+    - `api_server.py` — FastAPI ingestion server (receives Node-RED or HTTP posts)
+  - `data_layer/` — Vector DB schema and Weaviate utilities
+    - `create_schema.py` — Create Weaviate `SensorEvent` class
+    - `test_weaviate_connection.py` — Connection sanity checks
+    - `weaviate_client.py` — Weaviate connection and CRUD helpers
+    - `weaviate_utils.py` — Insert / query helper wrappers
+  - `simulation/` — Simulators and Node-RED flow
+    - `simulate_mq4.py` — Python methane sensor simulator
+    - `node_publisher.py` — Publishes simulated data to Node-RED or API
+    - `node_red_flow.json` — Node-RED flow import file
+  - `config/` — YAML configuration
+    - `agents.yaml`
+    - `tasks.yaml`
+    - `settings.yaml`
+  - `run/` — Run & test utilities
+    - `auto_cycle.py` — loop/watcher to trigger Crew periodically
+    - `main.py`
+    - `test_anomaly_cycle.py`
+- `docker-compose.yml` — Weaviate and optional vectorizer containers
+- `requirements.txt` — Python packages to install in `.venv`
+- `README.md` — Project documentation
+- `.env` — Local secrets (GMAIL creds, WEAVIATE_URL) — **do not commit**
 
 ---
 
@@ -97,18 +89,20 @@ Copy code
 > 🔹 Open PowerShell normally for setup commands  
 > 🔹 Use Administrator PowerShell only for Docker install or virtualization setup
 
+## Quick start — step-by-step (copy & paste)
+
 ### Step 1 — Clone or download the project
-```powershell
 git clone <your-github-repo-url>
-cd methane_monitoring_ai
-Step 2 — Create and activate a virtual environment
+cd adams
+
+### Step 2 — Create and activate a virtual environment
 powershell
 Copy code
 python -m venv .venv
 & ".\.venv\Scripts\Activate.ps1"
 You’ll see (.venv) at the start of your prompt.
 
-Step 3 — Install dependencies
+### Step 3 — Install dependencies
 powershell
 Copy code
 python -m pip install --upgrade pip setuptools wheel
@@ -118,10 +112,10 @@ pip install -r requirements.txt
 yaml
 Copy code
 ERROR: No matching distribution found for smtplib
-Remove smtplib from requirements.txt (it’s built into Python).
+Remove smtplib from requirements.txt — smtplib is part of Python’s standard library.
 
 5 — Configure .env file
-Create a .env file at your project root with the following:
+Create a .env file at your project root with the following contents:
 
 ini
 Copy code
@@ -129,24 +123,21 @@ WEAVIATE_URL=http://localhost:8080
 METHANE_THRESHOLD_PPM=80
 GMAIL_USER=your_email@gmail.com
 GMAIL_APP_PASSWORD=your_app_password_here
-Use a Gmail App Password, not your regular password.
-Generate one under: Google Account → Security → App Passwords.
+Use a Gmail App Password, not your regular password. Generate one under: Google Account → Security → App Passwords.
 
 6 — Run Weaviate (Docker)
-Weaviate is your vector database for storing methane readings.
-
 Step 1 — Start Docker Desktop
 Ensure virtualization (Intel VT-x or AMD-V) is enabled in your BIOS.
 
 Step 2 — Launch Weaviate
+
 powershell
 Copy code
 docker compose up -d
 docker compose logs -f
-Wait until you see:
-✅ Weaviate is ready to receive requests
+Wait until you see: ✅ Weaviate is ready to receive requests
 
-Check it manually:
+Check manually:
 
 powershell
 Copy code
@@ -159,7 +150,7 @@ Run this command once:
 powershell
 Copy code
 python -m data_layer.create_schema
-If you see:
+Expected output:
 
 Copy code
 ✅ Weaviate v4 collection created successfully.
@@ -168,8 +159,6 @@ or
 arduino
 Copy code
 Collection already exists.
-—you’re good.
-
 8 — Start the FastAPI ingestion server
 This API receives methane readings and triggers the crew automatically.
 
@@ -182,8 +171,7 @@ If successful, you’ll see:
 makefile
 Copy code
 INFO:     Application startup complete.
-API runs on:
-➡️ http://127.0.0.1:8000
+API runs on: http://127.0.0.1:8000
 
 9 — Test ingestion manually
 Send test data from PowerShell:
@@ -221,30 +209,20 @@ Manual run
 powershell
 Copy code
 python -m autonomous.crew
-This runs:
-
-Collect sensor data
-
-Validate readings
-
-Detect anomalies
-
-Generate report
+This runs: collect → validate → detect → report.
 
 Automatic run (recommended)
 The crew is already triggered automatically in api_server.py whenever new data arrives via /sensor-data.
 
-Alternatively, you can run a loop watcher:
+Alternatively, run a loop watcher:
 
 powershell
 Copy code
 python run/auto_cycle.py
-This watches Weaviate for new data and triggers CrewAI periodically.
+This watches Weaviate for new data and triggers the CrewAI periodically.
 
 12 — Node-RED simulation
-If you want to simulate live sensors:
-
-Open Node-RED in your browser (http://127.0.0.1:1880).
+Open Node-RED in your browser: http://127.0.0.1:1880.
 
 Import → simulation/node_red_flow.json.
 
@@ -290,48 +268,52 @@ Run continuous watcher:
 powershell
 Copy code
 python run/auto_cycle.py
-14 — Troubleshooting
-🧩 Docker issues
+14 — Troubleshooting (common fixes)
+Docker issues
 Ensure Docker Desktop is running.
 
 Enable virtualization in BIOS (VT-x/AMD-V).
 
 Restart your PC if containers fail to start.
 
-🧩 Circular import (weaviate)
+Circular import (weaviate)
 If you get:
 
 pgsql
 Copy code
 ImportError: cannot import name '__version__'
-→ Uninstall the global weaviate and reinstall inside your venv:
+Fix by reinstalling inside the venv:
 
 powershell
 Copy code
 pip uninstall weaviate-client -y
 pip install weaviate-client
-🧩 CrewAI YAML errors
+CrewAI YAML errors
+If you see:
+
 pgsql
 Copy code
 AttributeError: 'str' object has no attribute 'get'
-→ Your YAML files (agents.yaml, tasks.yaml) have formatting issues.
-Each key should have nested fields (description, agent, etc.), not plain strings.
+→ Your YAML files (agents.yaml, tasks.yaml) likely have formatting issues. Ensure each agent/task is specified as a mapping with fields (description, agent, expected_output), not as a bare string.
 
-🧩 Missing fastapi
+Missing fastapi
 powershell
 Copy code
 pip install fastapi uvicorn
-🧩 insert_sensor_event() argument error
-Make sure you call:
+insert_sensor_event() argument error
+Call it like:
 
 python
 Copy code
 insert_sensor_event(timestamp=data["timestamp"], node_id=data["node_id"], methane_ppm=data["methane_ppm"], scenario=data.get("scenario", "normal"))
-🧩 Crew doesn’t run automatically
-Check if background_tasks.add_task(run_crew_async) exists in your api_server.py.
+Crew doesn’t run automatically
+Check that background_tasks.add_task(run_crew_async) is present in api_server.py.
 
-15 — Next steps & notes
-✅ Add proper logging and alerts.
-✅ Deploy Weaviate in the cloud for long-term use.
-✅ Containerize the entire stack with Docker Compose (Weaviate + FastAPI).
-✅ Optional: Integrate blockchain or decentralized logging later for sensor authenticity.
+
+
+
+
+
+
+
+
