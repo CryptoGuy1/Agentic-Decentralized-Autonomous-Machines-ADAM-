@@ -3,7 +3,7 @@
 This avoids duplication and respects the centralized client handling.
 """
 
-from autonomous.weaviate_client import ensure_schema
+from data_layer.weaviate_client import ensure_schema
 
 
 if __name__ == "__main__":

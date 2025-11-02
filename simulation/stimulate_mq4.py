@@ -2,7 +2,7 @@
 import time
 import random
 import argparse
-from autonomous.weaviate_client import insert_sensor_event
+from data_layer.weaviate_client import insert_sensor_event
 
 def run_simulation(rate=1.0, nodes=3, scenario="normal"):
     """

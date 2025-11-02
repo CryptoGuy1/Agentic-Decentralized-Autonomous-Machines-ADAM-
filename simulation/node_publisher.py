@@ -17,3 +17,4 @@ def publish_once(node_id="node_1"):
 
 if __name__ == "__main__":
     publish_once()
+

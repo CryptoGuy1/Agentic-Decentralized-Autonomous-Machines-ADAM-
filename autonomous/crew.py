@@ -125,6 +125,26 @@ class MethaneMonitoringCrew:
         )
 
 
+def handle_detection_and_notify(anomalies: list[dict], report_text: str):
+    """
+    Called after detection/LLM reasoning. `anomalies` is a list of dicts of flagged events.
+    `report_text` is the text output already prepared (report from agent).
+    """
+    if not anomalies:
+        return False
+
+    subject = f"⚠️ Methane Alert — {len(anomalies)} anomaly(ies) detected"
+    body = f"Anomalies found:\n\n{report_text}\n\n---\nAutomated message from Methane Monitoring."
+    # recipients default to ALERT_TO in .env if to_addrs None
+    try:
+        send_email_alert(subject, body, None)
+        print("✅ Alert email sent.")
+        return True
+    except Exception as e:
+        print("❌ Failed to send alert email:", e)
+        return False
+
+
 if __name__ == "__main__":
     print("🚀 Launching Methane Monitoring Crew...")
     crew_instance = MethaneMonitoringCrew()
