@@ -18,7 +18,7 @@ from .reasoning_agent import call_chatgpt_reasoner
 from .email_alert import send_email_alert
 
 # Threshold from env
-DEFAULT_THRESHOLD = float(os.getenv("METHANE_THRESHOLD_PPM", "80.0"))
+DEFAULT_THRESHOLD = float(os.getenv("METHANE_THRESHOLD_PPM", "10.0"))
 
 # --- Config loader (robust) ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -155,7 +155,9 @@ def run_detection_and_notify(threshold: float = DEFAULT_THRESHOLD, limit: int = 
     # call your reasoner (string output)
     try:
         print("🧠 Calling LLM reasoner for detailed report...")
-        report_text = call_chatgpt_reasoner(anomalies, context_readings=readings)
+        context = {"anomalies": anomalies, "recent_readings": readings}
+        report_text = call_chatgpt_reasoner(context)
+
     except Exception as e:
         report_text = f"LLM reasoner failed: {e}"
         print(report_text)
@@ -190,6 +192,18 @@ if __name__ == "__main__":
     crew_instance = MethaneMonitoringCrew()
     _ = crew_instance.crew().kickoff()  # run Crew tasks (agents) once
     print("✅ Crew completed. Running detection & notification pass...")
+
     ok, report = run_detection_and_notify()
+
     print("Notification sent?:", ok)
-    print("Report summary (first 400 chars):\n", report[:400])
+
+    # Ensure report_text is a string before slicing
+    if isinstance(report, str):
+        report_text = report
+    else:
+        try:
+            report_text = json.dumps(report, indent=2, default=str)
+        except Exception:
+            report_text = str(report)
+
+    print("Report summary (first 400 chars):\n", report_text[:400])
