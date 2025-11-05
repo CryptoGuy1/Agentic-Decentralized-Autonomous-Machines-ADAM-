@@ -1,99 +1,91 @@
 [
     {
-        "id": "1a2b3c4d5e6f7g8h",
+        "id": "flow_methane_sim",
         "type": "tab",
-        "label": "Methane Simulation Flow",
+        "label": "Methane -> Weaviate (direct)",
         "disabled": false,
-        "info": ""
+        "info": "Simulates methane readings and POSTS directly to Weaviate /v1/objects"
     },
     {
-        "id": "inject1",
+        "id": "inject_trigger",
         "type": "inject",
-        "z": "1a2b3c4d5e6f7g8h",
-        "name": "Trigger Every 5s",
-        "props": [
-            {
-                "p": "payload"
-            }
-        ],
-        "repeat": "5",
+        "z": "flow_methane_sim",
+        "name": "Trigger (every 10s)",
+        "props": [{"p":"payload"}],
+        "repeat": "10",
         "once": true,
         "onceDelay": "1",
         "topic": "",
-        "payload": "{\"sensor_id\":\"CH4_001\"}",
-        "payloadType": "json",
-        "x": 140,
+        "payloadType": "date",
+        "x": 180,
         "y": 120,
-        "wires": [
-            [
-                "function1"
-            ]
-        ]
+        "wires": [["fn_generate"]]
     },
     {
-        "id": "function1",
+        "id": "fn_generate",
         "type": "function",
-        "z": "1a2b3c4d5e6f7g8h",
-        "name": "Generate Random Methane Data",
-        "func": "msg.payload.methane_ppm = (Math.random() * 100).toFixed(2);\nmsg.payload.timestamp = new Date().toISOString();\nreturn msg;",
+        "z": "flow_methane_sim",
+        "name": "Create Weaviate object payload",
+        "func": "// Build a valid Weaviate object for SensorEvent\n// You can also replace node_id with msg.payload.node_id to accept external input\nlet methane = parseFloat((Math.random() * 90 + 10).toFixed(2));\n\nmsg.payload = {\n  class: \"SensorEvent\",\n  properties: {\n    node_id: \"CH4_001\",\n    methane_ppm: methane,\n    timestamp: new Date().toISOString(),\n    scenario: methane > 80 ? \"alert\" : \"normal\",\n    trace_id: \"trace-\" + Date.now()\n  }\n};\n\n// Debug-friendly summary\nmsg.summary = {\n  node_id: msg.payload.properties.node_id,\n  methane_ppm: msg.payload.properties.methane_ppm,\n  timestamp: msg.payload.properties.timestamp\n};\n\nreturn msg;",
         "outputs": 1,
         "noerr": 0,
-        "initialize": "",
-        "finalize": "",
-        "libs": [],
-        "x": 400,
+        "x": 440,
         "y": 120,
-        "wires": [
-            [
-                "http1",
-                "debug1"
-            ]
-        ]
+        "wires": [["http_post", "debug_generated"]]
     },
     {
-        "id": "http1",
+        "id": "http_post",
         "type": "http request",
-        "z": "1a2b3c4d5e6f7g8h",
-        "name": "Send to Weaviate",
+        "z": "flow_methane_sim",
+        "name": "POST -> Weaviate /v1/objects",
         "method": "POST",
         "ret": "txt",
         "paytoqs": "ignore",
-        "url": "http://localhost:8080/v1/objects",
+        "url": "http://127.0.0.1:8080/v1/objects",
+        "timeout": "10",
         "tls": "",
         "persist": false,
         "proxy": "",
         "authType": "",
-        "senderr": false,
-        "headers": {
-            "Content-Type": "application/json"
-        },
-        "x": 670,
+        "headers": {"Content-Type":"application/json"},
+        "x": 740,
         "y": 120,
-        "wires": [
-            [
-                "debug2"
-            ]
-        ]
+        "wires": [["debug_weaviate_response","debug_payload"]]
     },
     {
-        "id": "debug1",
+        "id": "debug_generated",
         "type": "debug",
-        "z": "1a2b3c4d5e6f7g8h",
-        "name": "Simulated Output",
+        "z": "flow_methane_sim",
+        "name": "Generated payload summary",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "summary",
+        "targetType": "msg",
+        "x": 680,
+        "y": 60,
+        "wires": []
+    },
+    {
+        "id": "debug_payload",
+        "type": "debug",
+        "z": "flow_methane_sim",
+        "name": "Full payload (to send)",
         "active": true,
         "tosidebar": true,
         "console": false,
         "tostatus": false,
         "complete": "payload",
         "targetType": "msg",
-        "x": 420,
-        "y": 200,
+        "x": 940,
+        "y": 60,
         "wires": []
     },
     {
-        "id": "debug2",
+        "id": "debug_weaviate_response",
         "type": "debug",
-        "z": "1a2b3c4d5e6f7g8h",
+        "z": "flow_methane_sim",
         "name": "Weaviate Response",
         "active": true,
         "tosidebar": true,
@@ -101,8 +93,8 @@
         "tostatus": false,
         "complete": "payload",
         "targetType": "msg",
-        "x": 870,
-        "y": 120,
+        "x": 940,
+        "y": 140,
         "wires": []
     }
 ]
