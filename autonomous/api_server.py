@@ -8,6 +8,7 @@ import traceback
 from data_layer.weaviate_client import get_recent_readings
 
 
+
 # ✅ Import your existing Weaviate insert function
 from data_layer.weaviate_client import insert_sensor_event
 
