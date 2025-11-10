@@ -1,26 +1,31 @@
 # autonomous/crew.py
 import os
 import yaml
+import json
 import logging
+import time
+import signal
+from datetime import datetime, timezone
+from data_layer.weaviate_client import close_client
+
 from typing import List, Dict, Any, Tuple
+from statistics import mean, stdev
 
 from crewai import Agent, Crew, Process, Task
 from crewai.project import CrewBase, agent, crew, task
 from crewai.agents.agent_builder.base_agent import BaseAgent
 
-# Weaviate helpers
+# ✅ Import your fixed Weaviate helpers
 from data_layer.weaviate_client import ensure_schema, get_recent_readings
 
-# Reasoner (your LLM wrapper) - expected to accept a list[dict] and return textual reasoning
+# ✅ Reasoner and Email modules
 from .reasoning_agent import call_chatgpt_reasoner
-
-# Email alert function - make sure this file exists at autonomous/email_alert.py
 from .email_alert import send_email_alert
 
-# Threshold from env
-DEFAULT_THRESHOLD = float(os.getenv("METHANE_THRESHOLD_PPM", "10.0"))
 
-# --- Config loader (robust) ---
+# -------------------------
+# CONFIG LOADING
+# -------------------------
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 CONFIG_DIRS = [
     os.path.join(BASE_DIR, "config"),                  # autonomous/config
@@ -61,6 +66,9 @@ AGENTS_CONFIG = load_yaml_config("agents.yaml")
 TASKS_CONFIG = load_yaml_config("tasks.yaml")
 
 
+# -------------------------
+# CREWAI CONFIGURATION
+# -------------------------
 @CrewBase
 class MethaneMonitoringCrew:
     """Main CrewAI orchestration class for methane monitoring"""
@@ -85,7 +93,7 @@ class MethaneMonitoringCrew:
     def coordinator_agent(self) -> Agent:
         return Agent(config=AGENTS_CONFIG.get("coordinator_agent", {}), verbose=True)
 
-    # === Tasks as explicit Task objects (avoid YAML parsing pitfalls) ===
+    # === Define tasks ===
     @task
     def collect_data_task(self) -> Task:
         tc = TASKS_CONFIG.get("collect_data_task", {})
@@ -117,93 +125,166 @@ class MethaneMonitoringCrew:
         return Crew(agents=self.agents, tasks=self.tasks, process=Process.sequential, verbose=True)
 
 
-# ------------------------------
-# Helper / Bridge: detection -> reasoning -> email
-# ------------------------------
-def detect_anomalies_from_readings(readings: List[Dict[str, Any]], threshold: float = DEFAULT_THRESHOLD) -> List[Dict[str, Any]]:
-    """Return list of readings exceeding threshold. readings are dicts with 'methane_ppm' keys."""
+# -------------------------
+# DETECTION & ALERT LOGIC
+# -------------------------
+ABSOLUTE_EMERGENCY_PPM = float(os.getenv("ABSOLUTE_EMERGENCY_PPM", "5000.0"))
+
+def _safe_float(x, default=0.0):
+    try:
+        return float(x)
+    except Exception:
+        return default
+
+
+def detect_anomalies_from_readings(
+    readings: list[dict],
+    absolute_threshold: float = ABSOLUTE_EMERGENCY_PPM,
+) -> list[dict]:
+    """
+    Detect anomalies based only on an absolute methane threshold.
+    Anything above absolute_threshold is considered an alert.
+    """
     anomalies = []
     for r in readings:
-        try:
-            val = float(r.get("methane_ppm", 0))
-        except Exception:
-            continue
-        if val >= threshold:
-            anomalies.append(r)
+        ppm = _safe_float(r.get("methane_ppm"))
+        if ppm >= absolute_threshold:
+            anomalies.append({
+                "reason": f"ppm >= {absolute_threshold}",
+                "reading": r
+            })
     return anomalies
 
 
-def run_detection_and_notify(threshold: float = DEFAULT_THRESHOLD, limit: int = 20, send_to: list | None = None) -> Tuple[bool, str]:
+# -------------------------
+# RUN LOOP (continuous monitoring)
+# -------------------------
+
+# Configurable via environment
+CHECK_INTERVAL_SECONDS = float(os.getenv("CHECK_INTERVAL_SECONDS", "15"))     # poll interval
+ALERT_COOLDOWN_SECONDS = float(os.getenv("ALERT_COOLDOWN_SECONDS", "300"))  # don't re-alert the same trace for this many seconds
+
+# track alerts to avoid duplicates: map trace_id -> last_alert_unix_ts
+_last_alert_ts: dict[str, float] = {}
+
+def _should_alert_for_trace(trace_id: str) -> bool:
+    """Return True if we should alert for this trace_id (not alerted recently)."""
+    if not trace_id:
+        return True
+    now = time.time()
+    last = _last_alert_ts.get(trace_id)
+    if last is None:
+        return True
+    return (now - last) >= ALERT_COOLDOWN_SECONDS
+
+def _mark_alert_sent(trace_id: str) -> None:
+    if not trace_id:
+        return
+    _last_alert_ts[trace_id] = time.time()
+
+def run_detection_once_and_maybe_notify(limit: int = 50, send_to: list | None = None) -> Tuple[bool, str]:
     """
-    1. Fetch recent readings from Weaviate
-    2. Detect anomalies
-    3. Call LLM reasoner for an explanatory report
-    4. Send email alert (if anomalies)
-    Returns (sent_flag, report_text)
+    Run one detection pass, but only send email for new anomalies (deduplicated).
+    Returns (sent_flag, report_text).
     """
-    print("🔎 Fetching recent readings...")
     readings = get_recent_readings(limit=limit) or []
     if not readings:
-        print("No readings found.")
         return False, "No readings found."
 
-    anomalies = detect_anomalies_from_readings(readings, threshold=threshold)
+    anomalies = detect_anomalies_from_readings(readings)
     if not anomalies:
-        print("No anomalies found (threshold =", threshold, ").")
         return False, "No anomalies found."
 
-    # call your reasoner (string output)
-    try:
-        print("🧠 Calling LLM reasoner for detailed report...")
-        context = {"anomalies": anomalies, "recent_readings": readings}
-        report_text = call_chatgpt_reasoner(context)
+    # filter anomalies to ones that should actually trigger an alert now
+    new_anomalies = []
+    for a in anomalies:
+        r = a.get("reading", {}) if isinstance(a, dict) else a
+        trace_id = r.get("trace_id") or r.get("traceid") or r.get("id") or ""
+        if _should_alert_for_trace(trace_id):
+            new_anomalies.append((trace_id, r))
 
+    if not new_anomalies:
+        return False, "Anomalies present but none are new (cooldown)."
+
+    # build minimal anomalies list for reasoner (readings only)
+    anomalies_readings = [r for (_tid, r) in new_anomalies]
+
+    # call reasoner
+    try:
+        context = {"anomalies": anomalies_readings, "recent_readings": readings}
+        report = call_chatgpt_reasoner(anomalies_readings, context_readings=readings)
+        report_text = json.dumps(report, indent=2, default=str) if not isinstance(report, str) else report
+    except TypeError:
+        # fallback if reasoner signature expects a single context dict
+        try:
+            report = call_chatgpt_reasoner({"anomalies": anomalies_readings, "context": readings})
+            report_text = json.dumps(report, indent=2, default=str)
+        except Exception as e:
+            report_text = f"LLM reasoner failed: {e}"
     except Exception as e:
         report_text = f"LLM reasoner failed: {e}"
-        print(report_text)
 
-    # Compose email
-    subject = f"⚠️ Methane Alert: {len(anomalies)} reading(s) >= {threshold} ppm"
-    body = f"Anomalies detected (threshold {threshold} ppm):\n\n{report_text}\n\nRaw anomalies:\n{anomalies}"
-
-    # recipients: if None, read from env ALERT_TO or GMAIL_USER
+    # Determine recipients
     if send_to is None:
-        raw = os.getenv("ALERT_TO", None) or os.getenv("GMAIL_USER", None)
+        raw = os.getenv("ALERT_TO") or os.getenv("GMAIL_USER")
         send_to = [raw] if raw else []
 
-    # ensure valid recipient list
     if not send_to:
-        print("❌ No recipients configured. Set ALERT_TO or pass 'send_to'.")
-        return False, report_text
+        return False, report_text + "\n\nNo recipients configured."
 
+    # Compose email (unique subject to indicate number of new anomalies)
+    subject = f"⚠️ Methane Alert: {len(new_anomalies)} new reading(s) ≥ {ABSOLUTE_EMERGENCY_PPM} ppm"
+    body = f"Anomalies detected (threshold {ABSOLUTE_EMERGENCY_PPM} ppm):\n\n{report_text}\n\nRaw anomalies:\n{json.dumps([r for (_tid, r) in new_anomalies], indent=2, default=str)}"
+
+    # Attempt to send
     try:
-        print("✉️ Sending email to:", send_to)
         send_email_alert(subject, body, send_to)
-        print("✅ Email sent.")
-        return True, report_text
     except Exception as e:
-        print("❌ Failed to send email:", e)
         return False, f"{report_text}\n\nEmail error: {e}"
 
+    # mark each trace as alerted now
+    for (tid, _r) in new_anomalies:
+        _mark_alert_sent(tid or f"anon-{int(time.time()*1000)}")
 
-# If run directly, run a single detection->notify cycle
+    return True, report_text
+
+
+def _run_loop_forever(limit: int = 50, send_to: list | None = None):
+    """
+    Continuously poll, detect, and notify until interrupted by user (Ctrl+C).
+    """
+    print(f"▶️ Starting continuous monitor (interval {CHECK_INTERVAL_SECONDS}s). Ctrl+C to stop.")
+    try:
+        while True:
+            try:
+                sent, report = run_detection_once_and_maybe_notify(limit=limit, send_to=send_to)
+                now = datetime.now(timezone.utc).isoformat()
+                print(f"[{now}] Detection pass complete. Alert sent: {sent}. Summary: {str(report)[:200]}")
+            except Exception as e:
+                # log and continue (so transient errors don't crash loop)
+                print("Error during detection pass:", e)
+            time.sleep(CHECK_INTERVAL_SECONDS)
+    except KeyboardInterrupt:
+        print("⏹️ Received KeyboardInterrupt — stopping monitoring loop.")
+    finally:
+        # ensure resources are closed
+        try:
+            close_client()
+        except Exception:
+            pass
+        print("✅ Clean shutdown complete.")
+
+
+# If run directly, start the crew once then run continuous monitoring loop
 if __name__ == "__main__":
     print("🚀 Launching Methane Monitoring Crew (local run)")
     crew_instance = MethaneMonitoringCrew()
-    _ = crew_instance.crew().kickoff()  # run Crew tasks (agents) once
-    print("✅ Crew completed. Running detection & notification pass...")
+    _ = crew_instance.crew().kickoff()
+    print("✅ Crew startup tasks completed. Entering continuous detection loop...")
 
-    ok, report = run_detection_and_notify()
+    # Build explicit recipients list from env if present
+    raw = os.getenv("ALERT_TO") or os.getenv("GMAIL_USER")
+    recipients = [raw] if raw else None
 
-    print("Notification sent?:", ok)
-
-    # Ensure report_text is a string before slicing
-    if isinstance(report, str):
-        report_text = report
-    else:
-        try:
-            report_text = json.dumps(report, indent=2, default=str)
-        except Exception:
-            report_text = str(report)
-
-    print("Report summary (first 400 chars):\n", report_text[:400])
+    # Start continuous loop (runs until you press Ctrl+C)
+    _run_loop_forever(limit=int(os.getenv("DETECTION_LIMIT", "50")), send_to=recipients)
