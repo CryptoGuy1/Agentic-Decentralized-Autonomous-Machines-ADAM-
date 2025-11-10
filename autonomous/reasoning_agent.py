@@ -157,3 +157,4 @@ def call_chatgpt_reasoner(anomalies: List[Dict], context_readings: List[Dict] | 
         raise ValueError("LLM output missing required fields (decision/confidence)")
 
     return result
+
