@@ -100,7 +100,6 @@ Create a .env file in your project root:
 ini
 Copy code
 - **WEAVIATE_URL** = http://localhost:8080
-- **ABSOLUTE_EMERGENCY_PPM** = 5000
 - **ALERT_FROM_NAME** = Methane Monitor
 - **GMAIL_USER** = your_email@gmail.com
 - **ALERT_TO** = your_email@gmail.com
