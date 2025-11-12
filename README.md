@@ -230,7 +230,7 @@ to test anomaly detection and email alerts.
 ---
 
 ### 🧭 Common macOS Commands
-- Task	Command
+- **Task	Command**
 - Activate venv	**source .venv/bin/activate**
 - Start Weaviate	**docker compose up -d**
 - Check Docker info **docker ps**
