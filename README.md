@@ -116,7 +116,7 @@ Copy code
 - **ALERT_COOLDOWN_SECONDS** = 300
 - **DETECTION_LIMIT** = 50
 
-** Optional overrides **
+### **Optional overrides**
 - SMTP_HOST=smtp.gmail.com
 - SMTP_PORT=465
 
