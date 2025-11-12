@@ -98,12 +98,12 @@ Create a .env file in your project root:
 
 ini
 Copy code
-WEAVIATE_URL=http://localhost:8080
-ABSOLUTE_EMERGENCY_PPM=5000
-GMAIL_USER=your_email@gmail.com
-GMAIL_APP_PASSWORD=your_app_password
-💡 Use a Gmail App Password (not your normal password).
-Go to Google Account → Security → App Passwords to create one.
+- **WEAVIATE_URL** = http://localhost:8080
+- **ABSOLUTE_EMERGENCY_PPM* = 5000
+- **GMAIL_USER** = your_email@gmail.com
+- **GMAIL_APP_PASSWORD** = your_app_password
+- **💡 Use a Gmail App Password (not your normal password).
+- **Go to Google Account → Security → App Passwords to create one.
 
 ### 🐋 Step 5 — Run Weaviate with Docker
 Start Docker Desktop, then run:
