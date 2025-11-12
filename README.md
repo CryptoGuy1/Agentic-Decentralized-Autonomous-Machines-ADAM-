@@ -1,58 +1,3 @@
-# ADAM — (CrewAI + Weaviate + Node-RED)
-
-**Purpose**  
-This repository contains Veri-ADAM components to ingest methane sensor readings, store them in Weaviate, and run an autonomous CrewAI pipeline that validates, analyzes, and reports anomalies (with optional email alerts).  
-This README guides a user with **no prior programming experience** to set up and run the project on **Windows PowerShell**.
-
----
-
-## Table of contents
-
-1. Quick summary  
-2. What you need (software & accounts)  
-3. Project layout  
-4. Step-by-step installation (Windows PowerShell)  
-5. Configure secrets (`.env`)  
-6. Running Weaviate (Docker)  
-7. Creating the Weaviate schema  
-8. Start the FastAPI ingestion server  
-9. Test ingestion with PowerShell  
-10. Verify data in Weaviate  
-11. Run the CrewAI pipeline  
-12. Node-RED simulation (sensor flow)  
-13. Useful PowerShell commands  
-14. Troubleshooting (common fixes)  
-15. Next steps & notes
-
----
-
-## 1 — Quick summary
-
-This system:
-- Receives methane sensor data via HTTP (`/sensor-data`).
-- Stores readings in **Weaviate**.
-- Runs a **CrewAI workflow** to:
-  - Validate readings  
-  - Detect anomalies  
-  - Send alerts and reports (email optional)
-
-You can simulate data manually or through **Node-RED**.
-
----
-
-## 2 — What you need
-
-Install or ensure you have:
-- **Windows 10 or 11 or MacBook**  
-- **Python 3.12.x** 
-- **Docker Desktop** (for Weaviate database)  
-- **VS Code** (recommended editor)  
-- **Node-RED** (for sensor data simulation)  
-- **Gmail App Password** (for alert emails — optional)
-
----
-
-### 3 — Project layout
 
 - `methane_monitoring_ai/`
   - `autonomous/` — CREWAI / cognitive layer
@@ -82,232 +27,292 @@ Install or ensure you have:
 - `README.md` — Project documentation
 - `.env` — Local secrets (GMAIL creds, WEAVIATE_URL) — **do not commit**
 
----
 
-## 4 — Step-by-step installation (Windows PowerShell)
 
-> 🔹 Open PowerShell normally for setup commands  
-> 🔹 Use Administrator PowerShell only for Docker install or virtualization setup
+🧠 ADAM — Methane Monitoring System (CrewAI + Weaviate + Node-RED)
+Purpose
 
-## Quick start — step-by-step (copy & paste)
+ADAM is an autonomous methane monitoring and alert system that:
 
-### Step 1 — Clone or download the project
-git clone <your-github-repo-url>
+Collects methane readings (from Node-RED or API)
+
+Stores them in Weaviate
+
+Uses CrewAI to validate, analyze, and detect anomalies
+
+Sends email alerts when methane exceeds safe limits
+
+This guide helps you set up everything on macOS (MacBook, Intel or Apple Silicon).
+
+🧩 Table of contents
+
+Quick overview
+
+Requirements
+
+Project structure
+
+Step-by-step setup (macOS Terminal)
+
+Configure environment variables (.env)
+
+Run Weaviate (Docker)
+
+Create schema
+
+Start the ingestion API
+
+Test sending data
+
+Check stored data
+
+Run the CrewAI monitor
+
+Simulate data with Node-RED
+
+Useful macOS commands
+
+Troubleshooting
+
+Next steps
+
+⚡ 1 — Quick overview
+
+ADAM is composed of three layers:
+
+Data layer (Weaviate) — stores methane readings
+
+Autonomous layer (CrewAI) — validates and detects anomalies
+
+Simulation layer (Node-RED) — generates test readings
+
+When methane > 5000 ppm → a reasoning LLM summarizes the event and emails an alert.
+
+💻 2 — Requirements (install these first)
+
+You’ll need:
+
+Tool	Description
+macOS 13 or newer	Works on Intel and M-series chips
+Python 3.12+	Install via python.org
+ or Homebrew
+Docker Desktop	For running Weaviate
+Visual Studio Code	Recommended editor
+Node-RED	For sensor data simulation
+Gmail App Password (optional)	Used for alert emails
+
+Install Homebrew if you don’t have it:
+
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+
+Then:
+
+brew install python node
+npm install -g --unsafe-perm node-red
+
+🗂️ 3 — Project structure
+methane_monitoring_ai/
+├── autonomous/
+│   ├── crew.py               # CrewAI orchestration
+│   ├── reasoning_agent.py    # GPT reasoning logic
+│   ├── email_alert.py        # Gmail alert handler
+│   └── api_server.py         # FastAPI ingestion API
+├── data_layer/
+│   ├── weaviate_client.py
+│   ├── create_schema.py
+│   └── weaviate_utils.py
+├── simulation/
+│   ├── node_red_flow.json
+│   └── simulate_mq4.py
+├── config/
+│   ├── agents.yaml
+│   └── tasks.yaml
+├── docker-compose.yml
+├── requirements.txt
+├── run/
+│   ├── auto_cycle.py
+│   └── test_anomaly_cycle.py
+└── .env
+
+🧰 4 — Step-by-step setup (macOS Terminal)
+
+Open Terminal and follow along:
+
+Step 1 — Clone the repository
+git clone <your-repo-url>
 cd adams
 
-### Step 2 — Create and activate a virtual environment
-powershell
-Copy code
-python -m venv .venv
-& ".\.venv\Scripts\Activate.ps1"
-You’ll see (.venv) at the start of your prompt.
+Step 2 — Create and activate a virtual environment
+python3 -m venv .venv
+source .venv/bin/activate
 
-### Step 3 — Install dependencies
-powershell
-Copy code
+
+(You’ll see “(.venv)” at the start of your prompt)
+
+Step 3 — Install dependencies
 python -m pip install --upgrade pip setuptools wheel
 pip install -r requirements.txt
-⚠️ If you see:
 
-yaml
-Copy code
-ERROR: No matching distribution found for smtplib
-Remove smtplib from requirements.txt — smtplib is part of Python’s standard library.
 
-5 — Configure .env file
-Create a .env file at your project root with the following contents:
-
-ini
-Copy code
-WEAVIATE_URL=http://localhost:8080
-METHANE_THRESHOLD_PPM=80
-GMAIL_USER=your_email@gmail.com
-GMAIL_APP_PASSWORD=your_app_password_here
-Use a Gmail App Password, not your regular password. Generate one under: Google Account → Security → App Passwords.
-
-6 — Run Weaviate (Docker)
-Step 1 — Start Docker Desktop
-Ensure virtualization (Intel VT-x or AMD-V) is enabled in your BIOS.
-
-Step 2 — Launch Weaviate
-
-powershell
-Copy code
-docker compose up -d
-docker compose logs -f
-Wait until you see: ✅ Weaviate is ready to receive requests
-
-Check manually:
-
-powershell
-Copy code
-Invoke-RestMethod -Uri "http://127.0.0.1:8080/v1/.well-known/ready"
-If you get a JSON response → it's working.
-
-7 — Create Weaviate schema
-Run this command once:
-
-powershell
-Copy code
-python -m data_layer.create_schema
-Expected output:
-
-Copy code
-✅ Weaviate v4 collection created successfully.
-or
-
-arduino
-Copy code
-Collection already exists.
-8 — Start the FastAPI ingestion server
-This API receives methane readings and triggers the crew automatically.
-
-powershell
-Copy code
-& ".\.venv\Scripts\Activate.ps1"
-python -m autonomous.api_server
-If successful, you’ll see:
-
-makefile
-Copy code
-INFO:     Application startup complete.
-API runs on: http://127.0.0.1:8000
-
-9 — Test ingestion manually
-Send test data from PowerShell:
-
-powershell
-Copy code
-Invoke-RestMethod -Uri "http://127.0.0.1:8000/sensor-data" `
-  -Method POST `
-  -Headers @{ "Content-Type" = "application/json" } `
-  -Body '{"timestamp":"2025-10-23T14:00:00Z","node_id":"CH4_001","methane_ppm":90.0}'
-Expected response:
-
-json
-Copy code
-{
-  "status": "ok",
-  "message": "Data stored, crew triggered",
-  "data": { ... }
-}
-10 — Verify data in Weaviate
-Method 1 — Via FastAPI
-powershell
-Copy code
-$response = Invoke-RestMethod -Uri "http://127.0.0.1:8000/recent-readings?limit=5"
-$response | ConvertTo-Json -Depth 5
-Method 2 — Directly via GraphQL
-powershell
-Copy code
-$body = '{ "query": "{ Get { SensorEvent(limit:5) { node_id methane_ppm timestamp } } }" }'
-Invoke-RestMethod -Uri "http://127.0.0.1:8080/v1/graphql" -Method POST -Body $body -ContentType "application/json"
-You should see the sensor entries you just added.
-
-11 — Run the CrewAI pipeline
-Manual run
-powershell
-Copy code
-python -m autonomous.crew
-This runs: collect → validate → detect → report.
-
-Automatic run (recommended)
-The crew is already triggered automatically in api_server.py whenever new data arrives via /sensor-data.
-
-Alternatively, run a loop watcher:
-
-powershell
-Copy code
-python run/auto_cycle.py
-This watches Weaviate for new data and triggers the CrewAI periodically.
-
-12 — Node-RED simulation
-Open Node-RED in your browser: http://127.0.0.1:1880.
-
-Import → simulation/node_red_flow.json.
-
-Deploy the flow.
-
-Press the inject node to send data → Node-RED will post it to FastAPI.
-
-Check your PowerShell terminal for Crew activity.
-
-13 — Useful PowerShell commands
-Activate venv:
-
-powershell
-Copy code
-& ".\.venv\Scripts\Activate.ps1"
-Start Weaviate:
-
-powershell
-Copy code
-docker compose up -d
-Create schema:
-
-powershell
-Copy code
-python -m data_layer.create_schema
-Start API:
-
-powershell
-Copy code
-python -m autonomous.api_server
-Send test data:
-
-powershell
-Copy code
-Invoke-RestMethod -Uri "http://127.0.0.1:8000/sensor-data" -Method POST -Headers @{ "Content-Type" = "application/json" } -Body '{"timestamp":"2025-10-23T14:00:00Z","node_id":"CH4_001","methane_ppm":90.0}'
-Run crew manually:
-
-powershell
-Copy code
-python -m autonomous.crew
-Run continuous watcher:
-
-powershell
-Copy code
-python run/auto_cycle.py
-14 — Troubleshooting (common fixes)
-Docker issues
-Ensure Docker Desktop is running.
-
-Enable virtualization in BIOS (VT-x/AMD-V).
-
-Restart your PC if containers fail to start.
-
-Circular import (weaviate)
-If you get:
-
-pgsql
-Copy code
-ImportError: cannot import name '__version__'
-Fix by reinstalling inside the venv:
-
-powershell
-Copy code
-pip uninstall weaviate-client -y
-pip install weaviate-client
-CrewAI YAML errors
 If you see:
 
-pgsql
-Copy code
-AttributeError: 'str' object has no attribute 'get'
-→ Your YAML files (agents.yaml, tasks.yaml) likely have formatting issues. Ensure each agent/task is specified as a mapping with fields (description, agent, expected_output), not as a bare string.
+ERROR: No matching distribution found for smtplib
 
-Missing fastapi
-powershell
-Copy code
-pip install fastapi uvicorn
-insert_sensor_event() argument error
-Call it like:
 
-python
-Copy code
-insert_sensor_event(timestamp=data["timestamp"], node_id=data["node_id"], methane_ppm=data["methane_ppm"], scenario=data.get("scenario", "normal"))
-Crew doesn’t run automatically
-Check that background_tasks.add_task(run_crew_async) is present in api_server.py.
+→ remove smtplib from requirements.txt (it’s built into Python).
+
+🔐 5 — Configure .env
+
+Create a file named .env in your project root:
+
+WEAVIATE_URL=http://localhost:8080
+ABSOLUTE_EMERGENCY_PPM=5000
+GMAIL_USER=your_email@gmail.com
+GMAIL_APP_PASSWORD=your_app_password
+
+
+⚠️ Use a Gmail App Password, not your normal password
+Generate it here → Google Account → Security → App Passwords
+
+🐋 6 — Run Weaviate (Docker)
+
+Start Docker Desktop, then in Terminal:
+
+docker compose up -d
+docker compose logs -f
+
+
+Wait until you see “Weaviate is ready”.
+
+Check readiness:
+
+curl http://127.0.0.1:8080/v1/.well-known/ready
+
+
+If you get JSON output → ✅ working.
+
+🧱 7 — Create the schema
+
+Run once to create the Weaviate SensorEvent class:
+
+python -m data_layer.create_schema
+
+
+You should see:
+
+✅ Weaviate collection created successfully.
+
+
+or
+
+Collection already exists.
+
+🚀 8 — Start the ingestion API
+python -m autonomous.api_server
+
+
+Output should show:
+
+INFO:     Application startup complete.
+
+
+The API runs at → http://127.0.0.1:8000
+
+🧪 9 — Send a test reading
+curl -X POST http://127.0.0.1:8000/sensor-data \
+  -H "Content-Type: application/json" \
+  -d '{"timestamp":"2025-10-23T14:00:00Z","node_id":"CH4_001","methane_ppm":5500.0}'
+
+
+Expected JSON response:
+
+{
+  "status": "ok",
+  "message": "Data stored, crew triggered"
+}
+
+🔍 10 — Verify data in Weaviate
+
+Via REST:
+
+curl "http://127.0.0.1:8000/recent-readings?limit=5"
+
+
+Via GraphQL:
+
+curl -X POST http://127.0.0.1:8080/v1/graphql \
+  -H "Content-Type: application/json" \
+  -d '{"query": "{ Get { SensorEvent(limit:5) { node_id methane_ppm timestamp } } }"}'
+
+🤖 11 — Run the CrewAI monitor
+Manual run:
+python -m autonomous.crew
+
+Continuous run (auto-poll mode):
+python run/auto_cycle.py
+
+
+Press Ctrl + C to stop.
+
+🌐 12 — Simulate data with Node-RED
+
+Start Node-RED:
+
+node-red
+
+
+Visit http://127.0.0.1:1880
+
+Import → simulation/node_red_flow.json
+
+Click Deploy
+
+Use the green and red inject buttons:
+
+🟢 Resume Flow → start generating data every 15 s
+
+🛑 Stop Flow → pause simulation
+
+Every 5 minutes a synthetic anomaly (5000 – 6500 ppm) is injected.
+
+🧭 13 — Useful macOS commands
+Purpose	Command
+Activate venv	source .venv/bin/activate
+Start Weaviate	docker compose up -d
+Create schema	python -m data_layer.create_schema
+Start API	python -m autonomous.api_server
+Send test data	curl -X POST http://127.0.0.1:8000/sensor-data ...
+Run Crew manually	python -m autonomous.crew
+Continuous watcher	python run/auto_cycle.py
+Stop loop	Ctrl + C
+🩺 14 — Troubleshooting
+Issue	Fix
+Docker not starting	Ensure Docker Desktop is running and virtualization is enabled
+YAML format error	Recheck agents.yaml and tasks.yaml for correct indentation
+No module named fastapi	pip install fastapi uvicorn
+Email not sending	Verify .env Gmail credentials and that less-secure access is not required
+Crew loop never ends	Press Ctrl + C to safely stop the continuous process
+🧠 15 — Next steps
+
+Connect real methane sensors through MQTT → FastAPI endpoint
+
+Add multiple node IDs for distributed monitoring
+
+Use Weaviate’s hybrid search to analyze spatial methane trends
+
+Deploy FastAPI and CrewAI as Docker services
+
+✅ You’re all set!
+Run everything with:
+
+source .venv/bin/activate
+docker compose up -d
+python -m data_layer.create_schema
+python -m autonomous.api_server
+
+
+Then open Node-RED to start your methane simulation and watch the CrewAI autonomously detect and email you any anomalies 🚨.
 
 
 
