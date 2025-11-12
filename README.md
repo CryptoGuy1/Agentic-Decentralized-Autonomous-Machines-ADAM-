@@ -88,11 +88,11 @@ Copy code
 ### 🪜 Step 3 — Install dependencies
 bash
 Copy code
-python -m pip install --upgrade pip setuptools wheel
-pip install -r requirements.txt
+- python -m pip install --upgrade pip setuptools wheel
+- pip install -r requirements.txt
 ⚠️ If you see
-ERROR: No matching distribution found for smtplib,
-remove smtplib from requirements.txt (it’s built-in to Python).
+- ERROR: No matching distribution found for smtplib,
+- remove smtplib from requirements.txt (it’s built-in to Python).
 
 ### 🔐 Step 4 — Configure Environment Variables
 Create a .env file in your project root:
@@ -100,104 +100,105 @@ Create a .env file in your project root:
 ini
 Copy code
 - **WEAVIATE_URL** = http://localhost:8080
-- **ABSOLUTE_EMERGENCY_PPM* = 5000
+- **ABSOLUTE_EMERGENCY_PPM** = 5000
 - **GMAIL_USER** = your_email@gmail.com
 - **GMAIL_APP_PASSWORD** = your_app_password
-- **💡 Use a Gmail App Password (not your normal password).
-- **Go to Google Account → Security → App Passwords to create one.
+- **💡 Use a Gmail App Password (not your normal password).**
+- Go to Google Account → Security → App Passwords to create one.
 
 ### 🐋 Step 5 — Run Weaviate with Docker
-Start Docker Desktop, then run:
+- Start Docker Desktop, then run:
 
 bash
 Copy code
-docker compose up -d
-docker compose logs -f
-Wait until you see:
+- docker compose up -d
+- docker compose logs -f
+- Wait until you see:
 
 vbnet
 Copy code
-✅ Weaviate is ready to receive requests
-Check readiness:
+- ✅ Weaviate is ready to receive requests
+- Check readiness:
 
 bash
 Copy code
-curl http://127.0.0.1:8080/v1/.well-known/ready
-If you get a JSON response → ✅ Weaviate is running.
+- curl http://127.0.0.1:8080/v1/.well-known/ready
+- If you get a JSON response → ✅ Weaviate is running.
 
 ### 🧱 Step 6 — Create the Weaviate Schema
-Run once:
+- Run once:
 
 bash
 Copy code
-python -m data_layer.create_schema
-Expected output:
+- python -m data_layer.create_schema
+- Expected output:
 
 Copy code
-✅ Collection created successfully
+- ✅ Collection created successfully
 or
 
 arduino
-Copy code
-Collection already exists
+- Copy code
+- Collection already exists
+  
 ### 🌐 Step 7 — Start the FastAPI Ingestion Server
-This server receives methane readings from Node-RED or manual tests.
+- This server receives methane readings from Node-RED or manual tests.
 
 bash
 Copy code
-python -m autonomous.api_server
-You’ll see:
+- python -m autonomous.api_server
+- You’ll see:
 
 makefile
 Copy code
-INFO:     Application startup complete.
-API runs at → http://127.0.0.1:8000
+- INFO:     Application startup complete.
+- API runs at → http://127.0.0.1:8000
 
 ### 🧪 Step 8 — Send a Test Methane Reading
 bash
 Copy code
-curl -X POST http://127.0.0.1:8000/sensor-data \
-  -H "Content-Type: application/json" \
-  -d '{"timestamp":"2025-10-23T14:00:00Z","node_id":"CH4_001","methane_ppm":5500.0}'
-Expected response:
+- curl -X POST http://127.0.0.1:8000/sensor-data \
+ - -H "Content-Type: application/json" \
+ - -d '{"timestamp":"2025-10-23T14:00:00Z","node_id":"CH4_001","methane_ppm":5500.0}'
+- Expected response:
 
 json
 Copy code
-{
-  "status": "ok",
-  "message": "Data stored, crew triggered"
-}
+- {
+ -  "status": "ok",
+ -  "message": "Data stored, crew triggered"
+- }
 
 ### 🔍 Step 9 — Verify Data Storage
-✅ Option 1 — via FastAPI
+- ✅ Option 1 — via FastAPI
 bash
 Copy code
-curl "http://127.0.0.1:8000/recent-readings?limit=5"
-✅ Option 2 — via GraphQL (Weaviate)
+- curl "http://127.0.0.1:8000/recent-readings?limit=5"
+- ✅ Option 2 — via GraphQL (Weaviate)
 bash
 Copy code
-curl -X POST http://127.0.0.1:8080/v1/graphql \
-  -H "Content-Type: application/json" \
-  -d '{"query": "{ Get { SensorEvent(limit:5) { node_id methane_ppm timestamp } } }"}'
+- curl -X POST http://127.0.0.1:8080/v1/graphql \
+ -  -H "Content-Type: application/json" \
+ -  -d '{"query": "{ Get { SensorEvent(limit:5) { node_id methane_ppm timestamp } } }"}'
   
 ### 🤖 Step 10 — Run the CrewAI Monitor
-▶️ Manual Run
+- ▶️ Manual Run
 bash
 Copy code
-python -m autonomous.crew
-🔁 Continuous Monitoring
+- python -m autonomous.crew
+- 🔁 Continuous Monitoring
 bash
 Copy code
-python run/auto_cycle.py
-Press Ctrl + C to stop the loop.
+- python run/auto_cycle.py
+- Press Ctrl + C to stop the loop.
 
 ### 🔄 Step 11 — Simulate Data with Node-RED
-⚙️ Install & Launch
+- ⚙️ Install & Launch
 bash
 Copy code
-npm install -g --unsafe-perm node-red
-node-red
-Open Node-RED → http://127.0.0.1:1880
+- npm install -g --unsafe-perm node-red
+- node-red
+- Open Node-RED → http://127.0.0.1:1880
 
 🧩 Import Flow
 Click Import → simulation/node_red_flow.json
