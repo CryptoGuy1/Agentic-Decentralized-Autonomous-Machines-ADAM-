@@ -78,11 +78,12 @@ git clone <your-repo-url>
 cd adams
 
 ### 🪜 Step 2 — Create & activate virtual environment
+
 bash
 Copy code
-python3 -m venv .venv
-source .venv/bin/activate
-You’ll see (.venv) at the start of your prompt.
+- python3 -m venv .venv
+- source .venv/bin/activate
+- You’ll see (.venv) at the start of your prompt.
 
 ### 🪜 Step 3 — Install dependencies
 bash
