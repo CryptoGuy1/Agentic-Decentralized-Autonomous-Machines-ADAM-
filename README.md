@@ -101,10 +101,25 @@ ini
 Copy code
 - **WEAVIATE_URL** = http://localhost:8080
 - **ABSOLUTE_EMERGENCY_PPM** = 5000
+- **ALERT_FROM_NAME** = Methane Monitor
 - **GMAIL_USER** = your_email@gmail.com
+- **ALERT_TO** = your_email@gmail.com
 - **GMAIL_APP_PASSWORD** = your_app_password
 - **💡 Use a Gmail App Password (not your normal password).**
 - Go to Google Account → Security → App Passwords to create one.
+- **EMAIL_MAX_RETRIES** = 4
+- **EMAIL_RETRY_DELAY** = 2
+- **OPENAI_API_KEY** = your_openai_api_key 
+- **O1_MODEL_NAME** = "o1-mini"
+- **CHAT_MODEL_NAME** = "gpt-4o-mini"
+- **ABSOLUTE_EMERGENCY_PPM** = 5000.0  
+- **CHECK_INTERVAL_SECONDS** = 15
+- **ALERT_COOLDOWN_SECONDS** = 300
+- **DETECTION_LIMIT** = 50
+
+# Optional overrides
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=465
 
 ### 🐋 Step 5 — Run Weaviate with Docker
 - Start Docker Desktop, then run:
