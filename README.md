@@ -215,27 +215,28 @@ to test anomaly detection and email alerts.
 
 ---
 
-🧭 Common macOS Commands
-Task	Command
-Activate venv	source .venv/bin/activate
-Start Weaviate	docker compose up -d
-Create schema	python -m data_layer.create_schema
-Start API	python -m autonomous.api_server
-Send test data	curl -X POST http://127.0.0.1:8000/sensor-data ...
-Run Crew manually	python -m autonomous.crew
-Continuous monitor	python run/auto_cycle.py
-Stop monitoring	Ctrl + C
+### 🧭 Common macOS Commands
+- Task	Command
+- Activate venv	**source .venv/bin/activate**
+- Start Weaviate	**docker compose up -d**
+- Check Docker info **docker ps**
+- Create schema	**python -m data_layer.create_schema**
+- Start API	**python -m autonomous.api_server**
+- Send test data	**curl -X POST http://127.0.0.1:8000/sensor-data ...**
+- Run Crew manually	python -m autonomous.crew
+- Continuous monitor	**python run/auto_cycle.py**
+- Stop monitoring	**Ctrl + C**
 
 ---
 
-🧩 Troubleshooting
+### 🧩 Troubleshooting
 Issue	Fix
-🐋 Docker not starting	Open Docker Desktop manually
-⚙️ CrewAI YAML error	Recheck indentation in agents.yaml / tasks.yaml
-🚫 ModuleNotFoundError: fastapi	Run pip install fastapi uvicorn
-📧 Email not sending	Verify .env Gmail credentials
-🔁 Crew loop never stops	Press Ctrl + C
-🧬 “No schema present” in Weaviate	Re-run python -m data_layer.create_schema
+- 🐋 Docker not starting	Open Docker Desktop manually
+- ⚙️ CrewAI YAML error	Recheck indentation in agents.yaml / tasks.yaml
+- 🚫 ModuleNotFoundError: fastapi	Run pip install fastapi uvicorn
+- 📧 Email not sending	Verify .env Gmail credentials
+- 🔁 Crew loop never stops	Press Ctrl + C
+- 🧬 “No schema present” in Weaviate	Re-run python -m data_layer.create_schema
 
 ---
 
@@ -256,8 +257,8 @@ python -m autonomous.api_server
 
 # 5. Open Node-RED and deploy the flow
 🎉 You’re all set!
-ADAM will autonomously monitor methane levels and trigger alerts when dangerous readings are detected.
-Stay safe and smart with CrewAI + Weaviate + Node-RED 🚨
+- ADAM will autonomously monitor methane levels and trigger alerts when dangerous readings are detected.
+- Stay safe and smart with CrewAI + Weaviate + Node-RED 🚨
 
 yaml
 Copy code
