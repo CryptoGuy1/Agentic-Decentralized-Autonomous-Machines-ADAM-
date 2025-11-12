@@ -76,14 +76,15 @@ It continuously collects methane readings, detects anomalies, and sends **email 
 
 git clone <your-repo-url>
 cd adams
-🪜 Step 2 — Create & activate virtual environment
+
+### 🪜 Step 2 — Create & activate virtual environment
 bash
 Copy code
 python3 -m venv .venv
 source .venv/bin/activate
 You’ll see (.venv) at the start of your prompt.
 
-🪜 Step 3 — Install dependencies
+### 🪜 Step 3 — Install dependencies
 bash
 Copy code
 python -m pip install --upgrade pip setuptools wheel
@@ -92,7 +93,7 @@ pip install -r requirements.txt
 ERROR: No matching distribution found for smtplib,
 remove smtplib from requirements.txt (it’s built-in to Python).
 
-🔐 Step 4 — Configure Environment Variables
+### 🔐 Step 4 — Configure Environment Variables
 Create a .env file in your project root:
 
 ini
@@ -104,7 +105,7 @@ GMAIL_APP_PASSWORD=your_app_password
 💡 Use a Gmail App Password (not your normal password).
 Go to Google Account → Security → App Passwords to create one.
 
-🐋 Step 5 — Run Weaviate with Docker
+### 🐋 Step 5 — Run Weaviate with Docker
 Start Docker Desktop, then run:
 
 bash
@@ -123,7 +124,7 @@ Copy code
 curl http://127.0.0.1:8080/v1/.well-known/ready
 If you get a JSON response → ✅ Weaviate is running.
 
-🧱 Step 6 — Create the Weaviate Schema
+### 🧱 Step 6 — Create the Weaviate Schema
 Run once:
 
 bash
@@ -138,7 +139,7 @@ or
 arduino
 Copy code
 Collection already exists
-🌐 Step 7 — Start the FastAPI Ingestion Server
+### 🌐 Step 7 — Start the FastAPI Ingestion Server
 This server receives methane readings from Node-RED or manual tests.
 
 bash
@@ -151,7 +152,7 @@ Copy code
 INFO:     Application startup complete.
 API runs at → http://127.0.0.1:8000
 
-🧪 Step 8 — Send a Test Methane Reading
+### 🧪 Step 8 — Send a Test Methane Reading
 bash
 Copy code
 curl -X POST http://127.0.0.1:8000/sensor-data \
@@ -165,7 +166,8 @@ Copy code
   "status": "ok",
   "message": "Data stored, crew triggered"
 }
-🔍 Step 9 — Verify Data Storage
+
+### 🔍 Step 9 — Verify Data Storage
 ✅ Option 1 — via FastAPI
 bash
 Copy code
@@ -176,7 +178,8 @@ Copy code
 curl -X POST http://127.0.0.1:8080/v1/graphql \
   -H "Content-Type: application/json" \
   -d '{"query": "{ Get { SensorEvent(limit:5) { node_id methane_ppm timestamp } } }"}'
-🤖 Step 10 — Run the CrewAI Monitor
+  
+### 🤖 Step 10 — Run the CrewAI Monitor
 ▶️ Manual Run
 bash
 Copy code
@@ -187,7 +190,7 @@ Copy code
 python run/auto_cycle.py
 Press Ctrl + C to stop the loop.
 
-🔄 Step 11 — Simulate Data with Node-RED
+### 🔄 Step 11 — Simulate Data with Node-RED
 ⚙️ Install & Launch
 bash
 Copy code
@@ -208,6 +211,8 @@ Button	Action
 Every few minutes, Node-RED injects a breach event (5000–6500 ppm)
 to test anomaly detection and email alerts.
 
+---
+
 🧭 Common macOS Commands
 Task	Command
 Activate venv	source .venv/bin/activate
@@ -219,6 +224,8 @@ Run Crew manually	python -m autonomous.crew
 Continuous monitor	python run/auto_cycle.py
 Stop monitoring	Ctrl + C
 
+---
+
 🧩 Troubleshooting
 Issue	Fix
 🐋 Docker not starting	Open Docker Desktop manually
@@ -228,14 +235,7 @@ Issue	Fix
 🔁 Crew loop never stops	Press Ctrl + C
 🧬 “No schema present” in Weaviate	Re-run python -m data_layer.create_schema
 
-🧠 Next Steps
-Connect real methane sensors (MQTT → FastAPI)
-
-Deploy via Docker Compose end-to-end
-
-Add a Grafana dashboard for live visualization
-
-Extend CrewAI to manage multiple sensors
+---
 
 ✅ Quick Start Summary
 bash
@@ -261,8 +261,6 @@ yaml
 Copy code
 
 ---
-
-Would you like me to add **badges** (e.g. Python 3.12 | Docker | FastAPI | CrewAI |
 
 
 
